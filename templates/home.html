@@ -1,0 +1,167 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<script>
+$(document).ready(function() {
+  $("#add_symbol").click(function() {
+    $('.ui.modal').modal('show');
+  });
+
+  $("#fetchall").click(function() {
+    var arr = $('#stocksTable tr').find('td:first').map(function(){
+       return $(this).text()
+    }).get()
+
+    for (var i = 0; i < arr.length; ++i) {
+      console.log(arr[i]);
+
+      $.ajax({
+        url: '/fetchall',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ "symbol": arr[i] }),
+        dataType: 'json'
+      });
+    }
+    });
+
+  $("#save").click(function() {
+
+    var textareaContent = $("#symbols").val();
+    var symbols = textareaContent.split("\n");
+
+    for (var i = 0; i < symbols.length; ++i) {
+      console.log(symbols[i]);
+      
+      $.ajax({
+        url: '/stock',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ "symbol": symbols[i] }),
+        dataType: 'json'
+      });
+    }
+
+    $('.ui.modal').modal('hide');
+  });
+});
+</script>
+
+<form method="get">
+
+<div class="ui input">
+  <input name="symbol" type="text" placeholder="Symbol" value="{{ symbol or '' }}">
+</div>
+
+<div class="ui input">
+  <input name="forward_pe" type="text" placeholder="Forward P/E (more than)" value="{{ forward_pe or '' }}">
+</div>
+
+<div class="ui input">
+  <input name="sector" type="text" placeholder="Sector/Industry" value="{{ sector or '' }}">
+</div>
+
+<label for="order">Order by:</label>
+<select name="order" id="order">
+  <option value="Market Cap">Market Cap</option>
+  <option value="Country">Country</option>
+  <option value="Sector/Industry">Sector/Industry</option>
+  <option value="P/E">P/E</option>
+  <option value="Volume">Volume</option>
+</select>
+
+<button type="submit" class="ui button primary">Filter</button>
+
+</form>
+
+<button id="add_symbol" class="ui button secondary">Add Symbols</button>
+
+<div id="fetchall" class="ui button primary">
+  Fetch All
+</div>
+
+<table id="stocksTable" class="ui celled table">
+  <thead>
+    <tr>
+      <th>Ticker</th>
+      <th>Company</th>
+      <th>Country</th>
+      <th>Sector/Industry</th>
+      <th style="text-align:right;">Market Cap</th>
+      <th style="text-align:right;">P/E</th>
+      <th style="text-align:right;">200 Day MA</th>
+      <th style="text-align:right;">50 Day MA</th>
+      <th style="text-align:right;">Price</th>
+      <th style="text-align:right;">Volume</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for stock in stocks %}
+    <tr>
+      <td>{{ stock.symbol }}</td>
+      <td>{{ stock.name }}</td>
+      <td>{{ stock.country }}</td>
+      <td>{{ stock.sector }}</td>
+
+      {% if stock.marketcap is not none %}
+      <td style="text-align:right;">{{ "{:,.2f}".format(stock.marketcap / 1000000000) }}B</td>
+      {% else %}
+      <td style="text-align:right;">None</td>
+      {% endif %}
+
+      {% if stock.forward_pe is not none %}
+      <td style="text-align:right;">{{ "{:,.2f}".format(stock.forward_pe) }}</td>
+      {% else %}
+      <td style="text-align:right;">None</td>
+      {% endif %}
+
+      {% if stock.ma200 is not none %}
+      <td style="text-align:right;">{{ "{:,.2f}".format(stock.ma200) }}</td>
+      {% else %}
+      <td style="text-align:right;">None</td>
+      {% endif %}
+
+      {% if stock.ma50 is not none %}
+      <td style="text-align:right;">{{ "{:,.2f}".format(stock.ma50) }}</td>
+      {% else %}
+      <td style="text-align:right;">None</td>
+      {% endif %}
+
+      {% if stock.price is not none %}
+      <td style="text-align:right;">{{ "{:,.2f}".format(stock.price) }}</td>
+      {% else %}
+      <td style="text-align:right;">None</td>
+      {% endif %}
+
+      {% if stock.volume is not none %}
+      <td style="text-align:right;">{{ "{:,.0f}".format(stock.volume) }}</td>
+      {% else %}
+      <td style="text-align:right;">None</td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="ui modal">
+    <i class="close icon"></i>
+    <div class="header">
+      Add Stocks
+    </div>
+    <div class="content">
+        <div class="ui form">
+            <div class="field">
+              <label>Symbols</label>
+              <textarea id="symbols"></textarea>
+            </div>
+          </div>
+    </div>
+    <div class="actions">
+      <div id="save" class="ui positive right labeled icon button">
+        Add Symbols
+        <i class="plus icon"></i>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
